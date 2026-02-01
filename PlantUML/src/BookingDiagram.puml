@@ -1,0 +1,95 @@
+@startuml
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+
+' --- 1. LỚP ĐIỀU KHIỂN ---
+class BookingController <<Controller>> {
+    - currentGuestId : String
+    - requestTimestamp : DateTime
+    - sessionToken : String
+    + makeReservation(guestId: String, roomIds: List<String>) : void
+    + cancelReservation(bookingId: String) : void
+}
+
+' --- 2. LỚP NGHIỆP VỤ ---
+interface IBookingService <<Interface>> {
+    + checkAvailability(roomId: String, dates: DateRange) : boolean
+    + calculateTotal(booking: Booking) : double
+    + applyDiscount(booking: Booking, code: String) : void
+}
+
+class BookingService <<Service>> {
+    - repository : IBookingRepository
+    - taxRate : double
+    + checkAvailability(roomId: String, dates: DateRange) : boolean
+    + calculateTotal(booking: Booking) : double
+}
+
+' --- 3. LỚP DỮ LIỆU ---
+interface IBookingRepository <<Interface>> {
+    + save(booking: Booking) : void
+    + findById(id: String) : Booking
+    + deleteById(id: String) : void
+}
+
+' --- 4. CÁC THỰC THỂ ---
+class Hotel {
+    - hotelId : String
+    - name : String
+    - address : String
+    + getRooms() : List<Room>
+    + updateInfo() : void
+}
+
+class Room {
+    - roomId : String
+    - roomNumber : String
+    - status : String
+    + isAvailable() : boolean
+    + updateStatus(s: String) : void
+}
+
+class Guest {
+    - guestId : String
+    - fullName : String
+    - email : String
+    + getHistory() : List<Booking>
+    + updateProfile() : void
+}
+
+class Booking {
+    - bookingId : String
+    - checkInDate : Date
+    - checkOutDate : Date
+    + confirm() : void
+    + cancel() : void
+}
+
+class Invoice {
+    - invoiceId : String
+    - amount : double
+    - taxCode : String
+}
+
+class Payment {
+    - paymentId : String
+    - method : String
+    - status : String
+}
+
+' --- QUAN HỆ ---
+BookingService ..|> IBookingService
+BookingController ..> IBookingService : <<call>>
+BookingService ..> IBookingRepository : <<use>>
+
+Hotel "1" *-- "1..*" Room : composition
+Guest "1" --> "*" Booking : association
+Booking "1" o-- "1..*" Room : aggregation
+Booking "1" o-- "1" Invoice : aggregation
+Booking "1" *-- "1..*" Payment : composition
+
+' SẮP XẾP TẦNG DỌC
+BookingController -[hidden]down-> IBookingService
+IBookingService -[hidden]down-> IBookingRepository
+IBookingRepository -[hidden]down-> Hotel
+@enduml
